@@ -122,9 +122,6 @@ class Music:
             except:
                 pass
 
-    # @commands.command(pass_context=True)
-    # async def commands(self, ctx):
-        # pass
     @commands.command(pass_context=True)
     async def queue(self, ctx):
         """Prints all songs currently in queue"""
