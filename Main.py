@@ -80,12 +80,10 @@ class VoiceState:
         while True:
             self.play_next_song.clear()
             self.current = await self.songs.get()
-            # print(self.current)
-            # print(str(self.current))
             # print(dir(self.current.player))
             # print(vars(self.current.player))
             if hasattr(self.current.player, 'url'):
-                await self.bot.send_message(self.current.channel, 'Now playing ' + str(self.current.player.url))
+                await self.bot.send_message(self.current.channel, 'Now playing ' + str(self.current.player.title))
             else:
                 await self.bot.send_message(self.current.channel, 'Now playing ' + str(self.current.player.getName()))
             self.current.player.start()
@@ -127,8 +125,16 @@ class Music:
     # @commands.command(pass_context=True)
     # async def commands(self, ctx):
         # pass
-
     @commands.command(pass_context=True)
+    async def queue(self, ctx):
+        """Prints all songs currently in queue"""
+        state = self.get_voice_state(ctx.message.server)
+        print(dir(state))
+        print('--------------------------')
+        # print(vars(state))
+        # print('--------------------------')
+
+    @commands.command(pass_context=True, aliases=['move'])
     async def join(self, ctx, *, channel : discord.Channel):
         """Joins a voice channel."""
         try:
@@ -140,7 +146,7 @@ class Music:
         else:
             await self.bot.say('Ready to play audio in ' + channel.name)
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['hereboy'])
     async def summon(self, ctx):
         """Summons the bot to join your voice channel."""
         summoned_channel = ctx.message.author.voice_channel
@@ -156,7 +162,7 @@ class Music:
 
         return True
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['begone'])
     async def banish(self, ctx):
         """Banish the bot from all servers it's a part of and logs it out"""
         await bot.logout()
@@ -183,21 +189,14 @@ class Music:
         await self.bot.send_message(ctx.message.channel, os.listdir(self.album.music_directory))
         # TODO: add in meta data for song titles.
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['albums'])
     async def list_albums(self, ctx):
         """ Lists available albums.
         Same as !albums.
         """
         await self.bot.send_message(ctx.message.channel, self.library.albums)
 
-    @commands.command(pass_context=True)
-    async def albums(self, ctx):
-        """ Lists available albums.
-        Same as !list_albums.
-        """
-        await self.bot.send_message(ctx.message.channel, self.library.albums)
-
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['pl'])
     async def play(self, ctx, *, song : str):
         """Plays a song.
         If there is a song currently in the queue, then it is
@@ -234,13 +233,11 @@ class Music:
                 prettySong = self.album.songs[self.song][item.rfind('/') + 1:]
                 await self.bot.say('Enqueued ' + prettySong[:prettySong.rfind('.')])
                 entry.player.setName(prettySong[:prettySong.rfind('.')])
-                print (dir(entry.player))
-                print (vars(entry.player))
                 await state.songs.put(entry)
         else:
             await self.bot.send_message(ctx.message.channel, "No song matching your request was found.")
 
-    @commands.command(pass_context=True, no_pm=True)
+    @commands.command(pass_context=True, no_pm=True, aliases=['se'])
     async def search(self, ctx, *, song : str):
         """Searches YouTube for a song matching your request.
         If there is a song currently in the queue, then it is
@@ -267,7 +264,8 @@ class Music:
         else:
             player.volume = 0.6
             entry = VoiceEntry(ctx.message, player)
-            await self.bot.say('Enqueued ' + player.url)
+            await self.bot.say('Enqueued ' + player.title)
+            entry.player.setName(player.title)
             await state.songs.put(entry)
 
     @commands.command(pass_context=True)
@@ -280,7 +278,7 @@ class Music:
             player.volume = value / 100
             await self.bot.say('Set the volume to {:.0%}'.format(player.volume))
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['pa'])
     async def pause(self, ctx):
         """Pauses the currently played song."""
         state = self.get_voice_state(ctx.message.server)
@@ -288,7 +286,7 @@ class Music:
             player = state.player
             player.pause()
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['r'])
     async def resume(self, ctx):
         """Resumes the currently played song."""
         state = self.get_voice_state(ctx.message.server)
@@ -296,7 +294,7 @@ class Music:
             player = state.player
             player.resume()
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['st'])
     async def stop(self, ctx):
         """Stops playing audio and leaves the voice channel.
         This also clears the queue.
@@ -315,7 +313,7 @@ class Music:
         except:
             pass
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['next', 'nope'])
     async def skip(self, ctx):
         """Vote to skip a song. The song requester can automatically skip.
         3 skip votes are needed for the song to be skipped.
@@ -341,11 +339,10 @@ class Music:
         else:
             await self.bot.say('You have already voted to skip this song.')
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['?'])
     async def playing(self, ctx):
         """Shows info about the currently played song."""
         state = self.get_voice_state(ctx.message.server)
-        print(state.current.player)
         if not hasattr(state.current.player, 'url'):
             if self.song != None:
                 skip_count = len(state.skip_votes)
@@ -357,22 +354,12 @@ class Music:
         else:
             skip_count = len(state.skip_votes)
             if hasattr(state.current.player, 'url'):
-                await self.bot.say('Now playing {} [skips: {}/3]'.format(state.current.player.url, skip_count))
+                await self.bot.say('Now playing {} [skips: {}/3]'.format(state.current.player.title, skip_count))
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['songs'])
     async def list_songs(self, ctx):
         """ Lists available songs for current album.
         Same as !songs.
-        """
-        prettyAlbum = []
-        for item in self.album.songs:
-            prettyAlbum.append(item[item.rfind('/') + 1:])
-        await self.bot.send_message(ctx.message.channel, prettyAlbum)
-
-    @commands.command(pass_context=True)
-    async def songs(self, ctx):
-        """ Lists available songs for current album.
-        Same as !list_songs.
         """
         prettyAlbum = []
         for item in self.album.songs:
